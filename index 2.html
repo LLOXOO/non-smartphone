@@ -1,0 +1,955 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>디지털 디톡스 추천</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Myeongjo:wght@400;700&family=Noto+Sans+KR:wght@300;400;500;700&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --bg: #FBF8F3;
+      --text: #2E2820;
+      --sub: #8C8480;
+      --card: #FFFFFF;
+      --shadow: rgba(0,0,0,0.12);
+      --q1: #E8B84B;
+      --q2: #3DAA6E;
+      --q3: #D94F43;
+      --q4: #3A7BBF;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      font-family: "Noto Sans KR", sans-serif;
+      color: var(--text);
+      background-color: var(--bg);
+      display: flex;
+      justify-content: center;
+      align-items: stretch;
+    }
+
+    #app {
+      position: relative;
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      padding: 0 20px;
+      overflow: hidden;
+    }
+
+    .screen {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      min-height: 100%;
+      display: none;
+      padding: 20px 0 28px;
+      pointer-events: none;
+    }
+
+    .screen.active {
+      display: flex;
+      opacity: 1;
+      z-index: 1;
+      pointer-events: auto;
+    }
+
+    .landing, .completion {
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      text-align: center;
+      padding: 24px;
+    }
+
+    .title {
+      font-family: "Nanum Myeongjo", serif;
+      font-size: 38px;
+      color: var(--text);
+      line-height: 1.2;
+      letter-spacing: 0;
+      margin: 0;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    .subtitle {
+      margin-top: 16px;
+      font-size: 14px;
+      font-weight: 300;
+      line-height: 1.75;
+      color: var(--sub);
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    .main-btn {
+      margin-top: 54px;
+      background: var(--q1);
+      color: var(--text);
+      border: none;
+      border-radius: 14px;
+      padding: 15px 42px;
+      font-family: "Noto Sans KR", sans-serif;
+      font-size: 15px;
+      font-weight: 500;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(48, 47, 42, 0.10);
+      transition: transform 0.28s ease, background-color 0.28s ease, box-shadow 0.28s ease;
+    }
+
+    .landing .main-btn {
+      animation: ctaPulse 3s ease infinite;
+    }
+
+    .main-btn:hover {
+      transform: scale(1.02);
+      background: var(--q1);
+      box-shadow: 0 12px 30px rgba(48, 47, 42, 0.14);
+    }
+
+    .question-screen {
+      width: 100%;
+      padding: 0;
+      overflow: hidden;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .notebook-page {
+      position: relative;
+      width: 100%;
+      max-width: 500px;
+      height: 470px;
+      min-height: 470px;
+      max-height: 470px;
+      margin: 0 auto;
+      padding: 48px 24px 52px 64px;
+      background-color: #FFFDF8;
+      background-image:
+        linear-gradient(90deg, transparent 51px, #F5C0C0 51px, #F5C0C0 52.5px, transparent 52.5px),
+        repeating-linear-gradient(0deg, transparent 0, transparent 35px, #E8EEF5 35px, #E8EEF5 36px);
+      border-radius: 4px;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.08);
+      opacity: 0;
+      transform: translateY(32px) scale(0.97) rotate(-0.2deg);
+      animation: pageIn 300ms ease forwards;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .notebook-page::before {
+      content: "";
+      position: absolute;
+      left: 52px;
+      top: 0;
+      width: 1.5px;
+      height: 100%;
+      background: #F5C0C0;
+      box-shadow: 2px 0 4px rgba(240,168,168,0.2);
+      pointer-events: none;
+    }
+
+    .spiral {
+      position: absolute;
+      top: 8px;
+      left: 16px;
+      right: 16px;
+      display: flex;
+      justify-content: space-between;
+      pointer-events: none;
+    }
+
+    .spiral span {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #D0C8BC;
+      box-shadow: inset 0 1px 2px rgba(0,0,0,0.12);
+      opacity: 0.72;
+    }
+
+    .progress-dots {
+      position: absolute;
+      bottom: 14px;
+      left: 64px;
+      right: 24px;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      gap: 7px;
+    }
+
+    .progress-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: #DDD8D2;
+    }
+
+    .progress-dot.active {
+      background: var(--dot-color);
+      animation: dotPop 200ms ease forwards;
+    }
+
+    .question {
+      position: relative;
+      z-index: 2;
+      margin: 12px 0 0;
+      font-family: "Nanum Myeongjo", serif;
+      font-size: 22px;
+      color: #3A3330;
+      line-height: 1.4;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    .checklist {
+      position: relative;
+      z-index: 2;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      flex: 1;
+      justify-content: center;
+      padding-top: 16px;
+      padding-bottom: 8px;
+    }
+
+    .check-row {
+      position: relative;
+      min-height: 52px;
+      border: none;
+      background: transparent;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      padding: 0;
+      color: #4A4540;
+      text-align: left;
+      cursor: pointer;
+      opacity: 0;
+      transform: translateY(8px) rotate(var(--row-tilt));
+      animation: rowIn 260ms ease forwards;
+      animation-delay: var(--row-delay);
+    }
+
+    .check-row:hover .option-text {
+      color: #2E2820;
+    }
+
+    .check-row:hover .box-path {
+      stroke: #8F8378;
+    }
+
+    .check-row:hover .checkbox-svg {
+      animation: checkboxWobble 200ms ease;
+    }
+
+    .checkbox-svg {
+      flex: 0 0 22px;
+      width: 22px;
+      height: 22px;
+      overflow: visible;
+    }
+
+    .box-path {
+      stroke: #C8BFB5;
+      stroke-width: 1.8;
+      fill: none;
+      transition: stroke 160ms ease;
+    }
+
+    .check-path {
+      stroke: #5B9E6B;
+      stroke-width: 2.2;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      fill: none;
+      stroke-dasharray: 32;
+      stroke-dashoffset: 32;
+    }
+
+    .check-row.checked .check-path {
+      stroke-dashoffset: 0;
+    }
+
+    .option-text {
+      position: relative;
+      font-family: "Nanum Myeongjo", serif;
+      font-size: 20px;
+      line-height: 1.3;
+      color: #4A4540;
+      transition: color 160ms ease, opacity 160ms ease;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+    }
+
+    .strike-svg {
+      position: absolute;
+      left: 0;
+      top: 54%;
+      width: 100%;
+      height: 10px;
+      overflow: visible;
+      pointer-events: none;
+    }
+
+    .strike-path {
+      stroke: #C8A882;
+      stroke-width: 2;
+      stroke-linecap: round;
+      fill: none;
+      stroke-dasharray: var(--strike-length, 100);
+      stroke-dashoffset: var(--strike-length, 100);
+    }
+
+    .check-row.struck .option-text {
+      opacity: 0.58;
+    }
+
+    .check-row.struck .strike-path {
+      stroke-dashoffset: 0;
+    }
+
+    .pencil {
+      position: absolute;
+      left: 0;
+      top: 0;
+      width: 44px;
+      height: 44px;
+      z-index: 20;
+      pointer-events: none;
+      transform: translate(460px, -60px) rotate(0deg);
+      transition: transform 260ms ease-in-out;
+      transform-origin: center center;
+    }
+
+    .pencil.write-mode {
+      rotate: 0deg;
+    }
+
+    .pencil.erase-mode {
+      rotate: 180deg;
+    }
+
+    .pencil.rub {
+      animation: rub 420ms ease-in-out;
+    }
+
+    .page-exit-up {
+      animation: pageExitUp 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .page-exit-down {
+      animation: pageExitDown 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .page-from-above {
+      animation: pageFromAbove 400ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+    }
+
+    .result-page {
+      text-align: center;
+      justify-content: center;
+    }
+
+    .result-dot-row {
+      display: flex;
+      justify-content: center;
+      gap: 8px;
+      margin: 12px 0 16px;
+    }
+
+    .result-dot-row span {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--dot-color);
+    }
+
+    .result-heading {
+      font-family: "Nanum Myeongjo", serif;
+      font-size: 16px;
+      color: #9A9088;
+      margin-bottom: 14px;
+    }
+
+    .result-activity {
+      font-family: "Nanum Myeongjo", serif;
+      font-size: 22px;
+      color: #3A3330;
+      line-height: 1.6;
+      word-break: keep-all;
+      overflow-wrap: break-word;
+      padding: 0;
+      max-width: 100%;
+    }
+
+    .type-char {
+      opacity: 0;
+      animation: charIn 180ms ease forwards;
+      animation-delay: calc(var(--char-index) * 30ms);
+    }
+
+    .type-word {
+      display: inline;
+      opacity: 0;
+      animation: charIn 220ms ease forwards;
+      animation-delay: calc(var(--word-index) * 80ms);
+    }
+
+    .wavy-divider {
+      display: block;
+      width: 72%;
+      height: 18px;
+      margin: 12px auto 18px;
+    }
+
+    .wavy-divider path {
+      stroke: #C8A882;
+      stroke-width: 1.7;
+      stroke-linecap: round;
+      fill: none;
+    }
+
+    .result-note {
+      font-family: "Nanum Myeongjo", serif;
+      font-size: 15px;
+      font-style: italic;
+      color: #B0A89E;
+      margin-bottom: 18px;
+    }
+
+    .done-link {
+      position: relative;
+      border: none;
+      background: transparent;
+      color: #5B9E6B;
+      font-family: "Nanum Myeongjo", serif;
+      font-size: 17px;
+      cursor: pointer;
+      padding: 4px 4px 8px;
+    }
+
+    .done-link svg {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      width: 100%;
+      height: 8px;
+    }
+
+    .done-link path {
+      stroke: #5B9E6B;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      fill: none;
+      stroke-dasharray: 80;
+      stroke-dashoffset: 80;
+      transition: stroke-dashoffset 240ms ease;
+    }
+
+    .done-link:hover path {
+      stroke-dashoffset: 0;
+    }
+
+    .back-btn {
+      position: absolute;
+      bottom: 32px;
+      left: 64px;
+      z-index: 10;
+      border: none;
+      background: transparent;
+      color: var(--sub);
+      padding: 0;
+      font-family: "Noto Sans KR", sans-serif;
+      font-size: 12px;
+      font-weight: 300;
+      line-height: 1;
+      cursor: pointer;
+      transition: color 160ms ease;
+    }
+
+    .back-btn:hover {
+      color: var(--text);
+    }
+
+    #resultOverlay {
+      display: none;
+    }
+
+    .completion-message {
+      font-family: "Nanum Myeongjo", serif;
+      font-size: 32px;
+      color: var(--text);
+      text-align: center;
+      line-height: 1.5;
+      letter-spacing: 0;
+    }
+
+    .completion-line {
+      display: block;
+      opacity: 0;
+      transform: translateY(16px);
+      transition: opacity 0.45s ease, transform 0.45s ease;
+      transition-delay: calc(var(--line-index) * 150ms);
+    }
+
+    .completion.active .completion-line {
+      opacity: 1;
+      transform: translateY(0);
+    }
+
+    .completion .main-btn { margin-top: 40px; }
+
+    @keyframes ctaPulse {
+      0%, 100% { transform: scale(1); }
+      50% { transform: scale(1.03); }
+    }
+
+    @keyframes pageIn {
+      to { opacity: 1; transform: translateY(0) scale(1) rotate(-0.2deg); }
+    }
+
+    @keyframes pageExitUp {
+      to { opacity: 0; transform: translateY(-24px) scale(0.99) rotate(-0.5deg); }
+    }
+
+    @keyframes pageExitDown {
+      to { opacity: 0; transform: translateY(24px) scale(0.99) rotate(0.4deg); }
+    }
+
+    @keyframes pageFromAbove {
+      from { opacity: 0; transform: translateY(-32px) scale(0.98) rotate(0.2deg); }
+      to { opacity: 1; transform: translateY(0) scale(1) rotate(-0.2deg); }
+    }
+
+    @keyframes rowIn {
+      to { opacity: 1; transform: translateY(0) rotate(var(--row-tilt)); }
+    }
+
+    @keyframes dotPop {
+      0% { transform: scale(0); }
+      70% { transform: scale(1.3); }
+      100% { transform: scale(1); }
+    }
+
+    @keyframes checkboxWobble {
+      0% { transform: rotate(0deg); }
+      35% { transform: rotate(-3deg); }
+      70% { transform: rotate(3deg); }
+      100% { transform: rotate(0deg); }
+    }
+
+    @keyframes rub {
+      0%, 100% { translate: 0 0; }
+      25% { translate: -6px 0; }
+      50% { translate: 6px 0; }
+      75% { translate: -6px 0; }
+    }
+
+    @keyframes charIn {
+      to { opacity: 1; }
+    }
+  </style>
+</head>
+<body>
+  <div id="app">
+    <section class="screen landing active" data-screen="0">
+      <h1 class="title">오늘, 잠깐 내려놓아요</h1>
+      <div class="subtitle">스마트폰 대신 나에게 맞는 쉼을 찾아드릴게요</div>
+      <button class="main-btn" id="startBtn">시작하기</button>
+    </section>
+
+    <section class="screen question-screen" data-screen="1"></section>
+    <section class="screen question-screen" data-screen="2"></section>
+    <section class="screen question-screen" data-screen="3"></section>
+    <section class="screen question-screen" data-screen="4"></section>
+
+    <section class="screen completion" data-screen="6">
+      <div class="completion-message" id="completionMessage"></div>
+      <button class="main-btn" id="restartBtn">처음으로 돌아가기</button>
+    </section>
+
+    <div class="overlay" id="resultOverlay">
+      <div class="result-card">
+        <div class="choice-sequence" id="choiceSequence"></div>
+        <div class="result-sub">이런 활동은 어때요?</div>
+        <div class="activity" id="activityText"></div>
+        <div class="divider"></div>
+        <div class="result-note">오늘 하루 잠깐만, 스마트폰 없이.</div>
+        <button class="main-btn full-btn" id="doneBtn">완료했어요 ✓</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const activities = {
+      "단_내_정_휴": ["좋아하는 음악 앨범 하나 처음부터 끝까지 듣기", "읽다 만 책 펼쳐서 10페이지만 읽기", "좋아하는 향초 켜고 따뜻한 음료 마시며 멍때리기"],
+      "단_내_정_가": ["좋아하는 문장 손으로 필사하기", "읽다 만 책 펼쳐서 10페이지만 읽기", "좋아하는 음악 틀고 조용히 앉아있기"],
+      "단_내_정_의": ["일기 또는 오늘 감정 세 줄 쓰기", "오늘 본 것 중 좋았던 장면 글로 짧게 남기기", "오늘 하루 버킷리스트 3가지 종이에 써보기"],
+      "단_내_동_휴": ["5분 맨몸 스트레칭", "좋아하는 음악 틀고 집에서 자유롭게 춤추기", "집에서 혼자 낮잠 루틴 만들어보기"],
+      "단_내_동_가": ["좋아하는 노래 틀고 방 청소하기", "서랍이나 책상 위 정리하기", "간단하게 냉장고 속 정리하기"],
+      "단_내_동_의": ["레시피 보며 처음 요리 하나 만들어보기", "냉장고 재료로 즉흥 요리 도전하기", "홈트 루틴 하나 처음부터 끝까지 해보기"],
+      "단_외_정_휴": ["가까운 카페 가서 아무것도 안 하고 앉아있기", "공원 벤치에 앉아 사람 구경하기", "햇볕 드는 곳에 앉아 눈 감고 소리 듣기"],
+      "단_외_정_가": ["좋아하는 음료 사서 공원 벤치에서 마시기", "편의점 새 음식 골라 공원에서 먹기", "근처 서점 가서 아무 책이나 펼쳐 읽기"],
+      "단_외_정_의": ["동네 도서관 가서 관심 코너 구경하기", "공원에서 스케치북 펴고 풍경 그리기", "야외에서 읽고 싶었던 책 한 챕터 읽기"],
+      "단_외_동_휴": ["이어폰 없이 동네 한 바퀴 산책하기", "좋아하는 음악 들으며 주변 공원 느리게 걷기", "가까운 공원 달리기"],
+      "단_외_동_가": ["편의점 새 음식 골라 공원에서 먹기", "평소 안 가던 골목길 탐방하기", "자전거 타고 동네 한 바퀴"],
+      "단_외_동_의": ["아침 일찍 일어나 동네 새벽 산책하기", "해질녘 한강이나 공원 산책하기", "한 번도 안 가본 동네 걸어서 탐방하기"],
+      "반_내_정_휴": ["좋아하는 에세이 작가 책 한 권 정독하기", "좋아하는 음악 앨범 하나 처음부터 끝까지 듣기", "읽다 만 책 펼쳐서 10페이지만 읽기"],
+      "반_내_정_가": ["넘버 페인팅 해보기", "읽고 싶었던 책 한 챕터 읽기", "좋아하는 문장 손으로 필사하기"],
+      "반_내_정_의": ["손편지 초안 써보기", "올해 해보고 싶은 것들 종이에 자유롭게 써내려가기", "지금 감정에 어울리는 노래 플레이리스트 직접 만들기"],
+      "반_내_동_휴": ["요가 영상 없이 혼자 늘어지게 스트레칭", "좋아하는 음악 틀고 집에서 자유롭게 춤추기", "집에서 혼자 낮잠 루틴 만들어보기"],
+      "반_내_동_가": ["좋아하는 플레이리스트 틀고 집 전체 청소", "옷장 정리하고 안 입는 옷 분류하기", "서랍이나 책상 위 정리하기"],
+      "반_내_동_의": ["레시피 보며 처음 요리 하나 만들어보기", "냉장고 재료로 즉흥 요리 도전하기", "홈트 루틴 하나 처음부터 끝까지 해보기"],
+      "반_외_정_휴": ["가까운 카페 가서 아무것도 안 하고 앉아있기", "햇볕 드는 곳에 앉아 눈 감고 소리 듣기", "좋아하는 음악 들으며 주변 공원 느리게 걷기"],
+      "반_외_정_가": ["근처 서점 가서 아무 책이나 펼쳐 읽기", "야외에서 읽고 싶었던 책 한 챕터 읽기", "동네 카페 새 곳 골라 오래 앉아있기"],
+      "반_외_정_의": ["공원에서 스케치북 펴고 풍경 그리기", "동네 도서관 가서 관심 코너 구경하기", "전시회나 갤러리 혼자 둘러보기"],
+      "반_외_동_휴": ["가까운 공원 달리기", "이어폰 없이 동네 한 바퀴 산책하기", "좋아하는 음악 들으며 주변 공원 느리게 걷기"],
+      "반_외_동_가": ["평소 안 가던 골목길 탐방하기", "자전거 타고 동네 한 바퀴", "근처 재래시장이나 로컬 마켓 구경하기", "노래방 가서 목청껏 부르기"],
+      "반_외_동_의": ["해질녘 한강이나 공원 산책하기", "한 번도 안 가본 동네 걸어서 탐방하기", "아침 일찍 일어나 동네 새벽 산책하기"],
+      "하_내_정_휴": ["좋아하는 에세이 작가 책 한 권 정독하기", "좋아하는 음악 앨범 하나 처음부터 끝까지 듣기", "읽고 싶었던 책 처음부터 끝까지 읽기"],
+      "하_내_정_가": ["읽고 싶었던 책 처음부터 끝까지 읽기", "넘버 페인팅 해보기", "보석 비즈 아트 키트 하나 완성하기"],
+      "하_내_정_의": ["뜨개질 시작해보기", "양모펠트로 작은 소품 만들기", "좋아하는 작가 에세이 정독하기"],
+      "하_내_동_휴": ["요가 영상 없이 혼자 늘어지게 스트레칭", "좋아하는 음악 틀고 집에서 자유롭게 춤추기", "집에서 혼자 낮잠 루틴 만들어보기"],
+      "하_내_동_가": ["좋아하는 플레이리스트 틀고 집 전체 청소", "옷장 정리하고 안 입는 옷 분류하기", "가구 배치 바꿔보기"],
+      "하_내_동_의": ["베이킹 레시피 하나 골라 처음부터 만들어보기", "처음 해보는 홈트 프로그램 도전하기", "가구 배치 바꿔보기"],
+      "하_외_정_휴": ["동네 카페 새 곳 골라 오래 앉아있기", "공원 벤치에 앉아 사람 구경하기", "햇볕 드는 곳에 앉아 눈 감고 소리 듣기"],
+      "하_외_정_가": ["동네 카페 새 곳 골라 오래 앉아있기", "영화관 가서 보고 싶었던 영화 혼자 보기", "근처 서점 가서 아무 책이나 펼쳐 읽기"],
+      "하_외_정_의": ["전시회나 갤러리 혼자 둘러보기", "식물원이나 수목원 천천히 걷기", "동네 도서관 가서 관심 코너 구경하기"],
+      "하_외_동_휴": ["가까운 공원 달리기", "이어폰 없이 동네 한 바퀴 산책하기", "좋아하는 음악 들으며 주변 공원 느리게 걷기"],
+      "하_외_동_가": ["친구 불러서 동네 카페 투어하기", "매번 가던 가게에서 새로운 음식·음료 도전해보기", "노래방 가서 목청껏 부르기"],
+      "하_외_동_의": ["가까운 산 등산하기", "한 번도 안 가본 동네 걸어서 탐방하기", "해질녘 한강이나 공원 산책하기"]
+    };
+
+    const steps = [
+      { q: "지금 쉴 수 있는 시간이 얼마나 있어요?", color: "var(--yellow)", selected: "var(--yellow-sel)", options: [{ t: "시간이 넉넉치 않아", k: "단" }, { t: "어느정도 여유있어", k: "반" }, { t: "하루종일 쉴거야", k: "하" }] },
+      { q: "오늘은 어디서 쉬어볼까요?", color: "var(--green)", selected: "var(--green-sel)", options: [{ t: "편하게 집에서 쉴래", k: "내" }, { t: "오늘은 나가서 쉬어볼래", k: "외" }] },
+      { q: "오늘은 몸을 움직여 볼까요?", color: "var(--peach)", selected: "var(--peach-sel)", options: [{ t: "아니, 최소한으로 움직일래", k: "정" }, { t: "좋아, 좀 움직이며 쉴래", k: "동" }] },
+      { q: "오늘은 스마트폰 대신 어떤 휴식을 경험해볼까요?", color: "var(--lav)", selected: "var(--lav-sel)", options: [{ t: "오늘은 좀 머리를 비우고 싶어", k: "휴" }, { t: "소소하게 뭔가 해볼래", k: "가" }, { t: "의미있는 휴식을 경험할래", k: "의" }] }
+    ];
+
+    const completionMessages = [
+      "잘했어요!\n오늘 하루 조금 더 나다워졌어요 🌿",
+      "스마트폰 없이도 충분해요.\n오늘도 잘 쉬었어요 ✨",
+      "작은 실천이 쌓여 큰 변화가 돼요.\n오늘도 수고했어요 🙌"
+    ];
+
+    const screens = [...document.querySelectorAll('.screen')];
+    const overlay = document.getElementById('resultOverlay');
+    const activityText = document.getElementById('activityText');
+    const completionMessage = document.getElementById('completionMessage');
+    const choiceSequence = document.getElementById('choiceSequence');
+    let currentScreen = 0;
+    let selections = [null, null, null, null];
+
+    function showScreen(num) {
+      const target = document.querySelector(`.screen[data-screen="${num}"]`);
+      screens.forEach(s => {
+        s.classList.remove('active');
+      });
+      target.classList.add('active');
+      currentScreen = num;
+    }
+
+    function renderCompletionMessage(message) {
+      completionMessage.innerHTML = message
+        .split('\n')
+        .map((line, index) => `<span class="completion-line" style="--line-index: ${index}">${line}</span>`)
+        .join('');
+    }
+
+    const pencilSrc = 'data:image/svg+xml,%3Csvg%20xmlns%3D%22http%3A//www.w3.org/2000/svg%22%20viewBox%3D%220%200%20512%20512%22%3E%3Cpath%20fill%3D%22%232d2f3d%22%20d%3D%22M2%20495c-6-23%2034-123%2061-171l128%20129C142%20480%2026%20521%202%20495z%22/%3E%3Cpath%20fill%3D%22%23f6c4a9%22%20d%3D%22M63%20324l74-74%20128%20129-74%2074z%22/%3E%3Cpath%20fill%3D%22%23edaa91%22%20d%3D%22M63%20324l38-38%20128%20129-38%2038z%22/%3E%3Cpath%20fill%3D%22%23f7c400%22%20d%3D%22M137%20250L333%2054l126%20126-194%20199z%22/%3E%3Cpath%20fill%3D%22%23d8a900%22%20d%3D%22M101%20286L296%2091l43%2043-194%20196z%22%20opacity%3D%22.72%22/%3E%3Cpath%20fill%3D%22%23ffd95e%22%20d%3D%22M183%20296L379%20100l41%2041-196%20196z%22%20opacity%3D%22.75%22/%3E%3Cpath%20fill%3D%22%23dfe8e7%22%20d%3D%22M318%2034c14-14%2038-14%2052%200l107%20107c14%2014%2014%2038%200%2052l-19%2019-159-159z%22/%3E%3Cpath%20fill%3D%22%239fa6a5%22%20d%3D%22M302%2050c10-10%2027-10%2037%200l123%20123-37%2037L283%2068z%22/%3E%3Cpath%20fill%3D%22%23f91b22%22%20d%3D%22M369%2034c31-43%2093-46%20126-12%2033%2033%2030%2095-12%20126z%22/%3E%3Cpath%20fill%3D%22%23d4141b%22%20d%3D%22M342%2061c30-52%2083-76%20128-46L369%20116z%22%20opacity%3D%22.75%22/%3E%3C/svg%3E';
+
+    function stepColor(stepIndex) {
+      return ['#E8B84B', '#3DAA6E', '#D94F43', '#3A7BBF'][stepIndex];
+    }
+
+    function sleep(ms) {
+      return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    function checkboxSvg() {
+      return `
+        <svg class="checkbox-svg" viewBox="0 0 22 22" aria-hidden="true">
+          <path class="box-path" d="M4,4 L18,3.5 L18.5,18 L3.5,18.5 L4,4"></path>
+          <path class="check-path" d="M4,11 L9,16 L18,6"></path>
+        </svg>
+      `;
+    }
+
+    function progressDots(activeIndex) {
+      return [0, 1, 2, 3]
+        .map(index => `<span class="progress-dot ${index <= activeIndex ? 'active' : ''}" style="--dot-color: ${stepColor(index)}"></span>`)
+        .join('');
+    }
+
+    function spiralHoles() {
+      return Array.from({ length: 12 }, () => '<span></span>').join('');
+    }
+
+    function createStrikePath(row, index) {
+      const text = row.querySelector('.option-text');
+      const width = Math.max(80, Math.ceil(text.getBoundingClientRect().width));
+      const wobble = index % 2 === 0 ? -3 : 3;
+      const path = row.querySelector('.strike-path');
+      path.setAttribute('d', `M0,4 Q${width / 2},${4 + wobble} ${width},5`);
+      row.querySelector('.strike-svg').setAttribute('viewBox', `0 0 ${width} 10`);
+      row.querySelector('.strike-svg').style.width = `${width}px`;
+      const length = path.getTotalLength();
+      path.style.setProperty('--strike-length', length);
+      path.style.strokeDasharray = length;
+      path.style.strokeDashoffset = length;
+    }
+
+    function prepDrawPaths(page) {
+      page.querySelectorAll('.check-row').forEach((row, index) => {
+        createStrikePath(row, index);
+        const check = row.querySelector('.check-path');
+        const length = check.getTotalLength();
+        check.style.strokeDasharray = length;
+        check.style.strokeDashoffset = length;
+      });
+    }
+
+    function setPathOffset(path, offset, duration, easing = 'linear') {
+      path.style.transition = `stroke-dashoffset ${duration}ms ${easing}`;
+      requestAnimationFrame(() => {
+        path.style.strokeDashoffset = offset;
+      });
+    }
+
+    function tipOffset(mode) {
+      return mode === 'erase' ? { x: 8, y: 48, rotation: 180 } : { x: 7, y: 49, rotation: 0 };
+    }
+
+    function movePencil(pencil, page, x, y, duration, easing = 'ease-in-out', mode = 'write') {
+      const pageRect = page.getBoundingClientRect();
+      const offset = tipOffset(mode);
+      pencil.style.transition = `transform ${duration}ms ${easing}`;
+      pencil.style.transform = `translate(${x - pageRect.left - offset.x}px, ${y - pageRect.top - offset.y}px) rotate(${offset.rotation}deg)`;
+      return sleep(duration);
+    }
+
+    function exitPencil(pencil, mode = 'write', duration = 280) {
+      const offset = tipOffset(mode);
+      pencil.style.transition = `transform ${duration}ms ease-in`;
+      pencil.style.transform = `translate(300px, -80px) rotate(${offset.rotation}deg)`;
+      return sleep(duration);
+    }
+
+    async function drawStrike(row, pencil, page) {
+      const text = row.querySelector('.option-text');
+      const textRect = text.getBoundingClientRect();
+      const path = row.querySelector('.strike-path');
+      await movePencil(pencil, page, textRect.left, textRect.top + textRect.height * 0.55, 260);
+      setPathOffset(path, 0, 360);
+      await movePencil(pencil, page, textRect.right, textRect.top + textRect.height * 0.58, 360, 'linear');
+      row.classList.add('struck');
+    }
+
+    async function drawCheck(row, pencil, page) {
+      const box = row.querySelector('.checkbox-svg');
+      const check = row.querySelector('.check-path');
+      const rect = box.getBoundingClientRect();
+      await movePencil(pencil, page, rect.left + 4, rect.top + 11, 220);
+      setPathOffset(check, 0, 460, 'ease');
+      await movePencil(pencil, page, rect.left + 9, rect.top + 16, 210, 'linear');
+      await movePencil(pencil, page, rect.left + 18, rect.top + 6, 250, 'linear');
+      row.classList.add('checked');
+    }
+
+    async function runForwardAnimation(page, selectedIndex) {
+      const pencil = page.querySelector('.pencil');
+      const rows = [...page.querySelectorAll('.check-row')];
+      const nonSelected = rows.filter((_, index) => index !== selectedIndex);
+      const firstTarget = nonSelected[0] || rows[selectedIndex];
+      const firstTextRect = firstTarget.querySelector('.option-text').getBoundingClientRect();
+
+      await movePencil(pencil, page, firstTextRect.left, firstTextRect.top, 320, 'cubic-bezier(0.34, 1.56, 0.64, 1)');
+      for (const row of nonSelected) {
+        await drawStrike(row, pencil, page);
+      }
+      await drawCheck(rows[selectedIndex], pencil, page);
+      await exitPencil(pencil);
+    }
+
+    async function runEraseAnimation(page) {
+      const pencil = page.querySelector('.pencil');
+      const checkedRow = page.querySelector('.check-row.checked');
+      const struckRows = [...page.querySelectorAll('.check-row.struck')].reverse();
+      if (!checkedRow) return;
+
+      const check = checkedRow.querySelector('.check-path');
+      const checkLength = check.getTotalLength();
+      const boxRect = checkedRow.querySelector('.checkbox-svg').getBoundingClientRect();
+      await movePencil(pencil, page, boxRect.left + 18, boxRect.top + 6, 300, 'cubic-bezier(0.34, 1.56, 0.64, 1)', 'erase');
+      pencil.classList.add('rub');
+      setPathOffset(check, checkLength, 420, 'ease');
+      await sleep(420);
+      pencil.classList.remove('rub');
+      checkedRow.classList.remove('checked');
+
+      for (const row of struckRows) {
+        const textRect = row.querySelector('.option-text').getBoundingClientRect();
+        const strike = row.querySelector('.strike-path');
+        const strikeLength = strike.getTotalLength();
+        await movePencil(pencil, page, textRect.right, textRect.top + textRect.height * 0.58, 240, 'ease-in-out', 'erase');
+        setPathOffset(strike, strikeLength, 320, 'linear');
+        await movePencil(pencil, page, textRect.left, textRect.top + textRect.height * 0.55, 320, 'linear', 'erase');
+        row.classList.remove('struck');
+      }
+
+      await exitPencil(pencil, 'erase', 240);
+    }
+
+    function markRowsForSelection(page, selectedIndex) {
+      const rows = [...page.querySelectorAll('.check-row')];
+      rows.forEach((row, index) => {
+        if (index === selectedIndex) {
+          row.classList.add('checked');
+          row.querySelector('.check-path').style.strokeDashoffset = 0;
+        } else {
+          row.classList.add('struck');
+          row.querySelector('.strike-path').style.strokeDashoffset = 0;
+        }
+      });
+    }
+
+    function renderQuestion(stepIndex, mode = 'normal') {
+      const step = steps[stepIndex];
+      const container = document.querySelector(`.screen[data-screen="${stepIndex + 1}"]`);
+      container.innerHTML = `
+        <div class="notebook-page ${mode === 'from-above' ? 'page-from-above' : ''}">
+          <div class="spiral">${spiralHoles()}</div>
+          <div class="progress-dots">${progressDots(stepIndex)}</div>
+          <div class="question">${step.q}</div>
+          <div class="checklist"></div>
+          <img class="pencil" src="${pencilSrc}" alt="" />
+          <button class="back-btn">← 이전</button>
+        </div>
+      `;
+
+      const page = container.querySelector('.notebook-page');
+      const checklist = container.querySelector('.checklist');
+      const selectedIndex = step.options.findIndex(option => option.k === selections[stepIndex]);
+
+      step.options.forEach((option, optionIndex) => {
+        const row = document.createElement('button');
+        row.className = 'check-row';
+        row.style.setProperty('--row-delay', `${optionIndex * 80}ms`);
+        row.style.setProperty('--row-tilt', `${optionIndex % 2 === 0 ? -0.35 : 0.28}deg`);
+        row.innerHTML = `
+          ${checkboxSvg()}
+          <span class="option-text">${option.t}<svg class="strike-svg" aria-hidden="true"><path class="strike-path"></path></svg></span>
+        `;
+
+        row.addEventListener('click', async () => {
+          if (container.dataset.locked === 'true') return;
+          container.dataset.locked = 'true';
+
+          selections[stepIndex] = option.k;
+          await runForwardAnimation(page, optionIndex);
+          await sleep(400);
+
+          if (stepIndex < 3) {
+            page.classList.add('page-exit-up');
+            await sleep(400);
+            renderQuestion(stepIndex + 1);
+            showScreen(stepIndex + 2);
+          } else {
+            showResult();
+          }
+
+          container.dataset.locked = 'false';
+        });
+
+        checklist.appendChild(row);
+      });
+
+      requestAnimationFrame(() => {
+        prepDrawPaths(page);
+        if (mode === 'marked' && selectedIndex >= 0) {
+          markRowsForSelection(page, selectedIndex);
+        }
+      });
+
+      container.querySelector('.back-btn').addEventListener('click', async () => {
+        if (container.dataset.locked === 'true') return;
+        if (stepIndex === 0) {
+          showScreen(0);
+        } else {
+          container.dataset.locked = 'true';
+          page.classList.add('page-exit-down');
+          await sleep(400);
+          renderQuestion(stepIndex - 1, 'marked');
+          showScreen(stepIndex);
+          const previousScreen = document.querySelector(`.screen[data-screen="${stepIndex}"]`);
+          previousScreen.dataset.locked = 'true';
+          const previous = document.querySelector(`.screen[data-screen="${stepIndex}"] .notebook-page`);
+          await sleep(80);
+          await runEraseAnimation(previous);
+          previousScreen.dataset.locked = 'false';
+          container.dataset.locked = 'false';
+        }
+      });
+    }
+
+    function pickRandom(arr) {
+      return arr[Math.floor(Math.random() * arr.length)];
+    }
+
+    function showResult() {
+      const key = selections.join('_');
+      const matched = activities[key] || ["창밖 바라보며 천천히 심호흡하기"];
+      const activity = pickRandom(matched);
+      const container = document.querySelector('.screen[data-screen="4"]');
+      const page = container.querySelector('.notebook-page');
+      page.classList.add('page-exit-up');
+
+      setTimeout(() => {
+        container.innerHTML = `
+          <div class="notebook-page result-page">
+            <div class="spiral">${spiralHoles()}</div>
+            <div class="result-dot-row">${[0, 1, 2, 3].map(index => `<span style="--dot-color: ${stepColor(index)}"></span>`).join('')}</div>
+            <div class="result-heading">이런 활동은 어때요?</div>
+            <div class="result-activity">${activity.split(' ').map((word, wi) => `<span class="type-word" style="--word-index: ${wi}">${word}</span>`).join(' ')}</div>
+            <svg class="wavy-divider" viewBox="0 0 220 18" aria-hidden="true"><path d="M2,9 C36,2 48,15 80,9 S126,2 158,9 S194,15 218,8"></path></svg>
+            <div class="result-note">오늘 하루 잠깐만, 스마트폰 없이.</div>
+            <button class="done-link" id="inlineDoneBtn">완료했어요 ✓<svg viewBox="0 0 80 8" aria-hidden="true"><path d="M2,5 Q20,1 38,5 T78,4"></path></svg></button>
+          </div>
+        `;
+        container.querySelector('#inlineDoneBtn').addEventListener('click', showCompletion);
+      }, 400);
+    }
+
+    function showCompletion() {
+      overlay.classList.remove('show');
+      renderCompletionMessage(pickRandom(completionMessages));
+      showScreen(6);
+    }
+
+    function resetAll() {
+      selections = [null, null, null, null];
+      overlay.classList.remove('show');
+      showScreen(0);
+      steps.forEach((_, i) => renderQuestion(i));
+    }
+
+    document.getElementById('startBtn').addEventListener('click', () => showScreen(1));
+    document.getElementById('doneBtn').addEventListener('click', showCompletion);
+    document.getElementById('restartBtn').addEventListener('click', resetAll);
+
+    steps.forEach((_, i) => renderQuestion(i));
+  </script>
+</body>
+</html>
